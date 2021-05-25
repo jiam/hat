@@ -2,7 +2,7 @@ import os
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from .models import TestCase, Module, Project, DebugTalk,TestConfig, TestSuite
+from .models import TestCase, Module, Project, DebugTalk
 from .utils import dump_python_file, dump_yaml_file
 
 
@@ -87,7 +87,7 @@ def run_by_suite(index, base_url, path):
 
 
 
-def run_by_batch(test_list, base_url, path, type=None, mode=False):
+def run_by_batch(test_list, path, type=None, mode=False):
     """
     批量组装用例数据
     :param test_list:
@@ -102,31 +102,31 @@ def run_by_batch(test_list, base_url, path, type=None, mode=False):
             form_test = test_list[index].split('=')
             value = form_test[1]
             if type == 'project':
-                run_by_project(value, base_url, path)
+                run_by_project(value,  path)
             elif type == 'module':
-                run_by_module(value, base_url, path)
+                run_by_module(value,  path)
             elif type == 'suite':
-                run_by_suite(value, base_url, path)
+                run_by_suite(value,  path)
             else:
-                run_by_single(value, base_url, path)
+                run_by_single(value,  path)
 
     else:
         if type == 'project':
             for value in test_list.values():
-                run_by_project(value, base_url, path)
+                run_by_project(value,  path)
 
         elif type == 'module':
             for value in test_list.values():
-                run_by_module(value, base_url, path)
+                run_by_module(value,  path)
         elif type == 'suite':
             for value in test_list.values():
-                run_by_suite(value, base_url, path)
+                run_by_suite(value,  path)
 
         else:
             for index in range(len(test_list) - 1):
                 form_test = test_list[index].split('=')
                 index = form_test[1]
-                run_by_single(index, base_url, path)
+                run_by_single(index, path)
 
 
 def run_by_module(id, base_url, path):

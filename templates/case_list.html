@@ -91,40 +91,9 @@
         <div class="am-btn-toolbars am-btn-toolbar am-kg am-cf">
             <form id="pro_filter">
                 <ul>
-                    <li style="padding-top: 5px">
-                        <select name="project" class="am-input-zm am-input-xm"
-                                onchange="auto_load('#pro_filter', '{% url 'module_search_ajax' %}', '#module', 'module')">
-                            <option value="{{ info.belong_project }}"
-                                    selected>{{ info.belong_project }}</option>
-                            {% for foo in projects %}
-                                {% ifnotequal info.belong_project foo.project_name %}
-                                    <option value="{{ foo.project_name }}">{{ foo.project_name }}</option>
-                                {% endifnotequal %}
-
-                            {% endfor %}
-                            {% if info.belong_project != 'All' %}
-                                <option value="All">All</option>
-                            {% endif %}
-                        </select>
-                    </li>
-
-                    <li style="padding-top: 5px">
-                        <select name="module" class=" am-input-zm am-input-xm" id="module">
-                            {% if info.belong_module == "请选择" %}
-                            <option selected value="{{ info.belong_module }}">{{ info.belong_module }}</option>
-                            {% else %}
-                            <option selected value="{{ info.belong_module.id }}">{{ info.belong_module.module_name }}</option>
-                            {% endif %}
-                        </select>
-                    </li>
-
-                    <li style="padding-top: 5px"><input value="{{ info.name }}" type="text" name="name"
-                                                        class=" am-input-zm am-input-xm"
-                                                        placeholder="用例名称"/></li>
-                    <li>
-                    <li style="padding-top: 5px"><input value="{{ info.user }}" type="text" name="user"
+                    <li style="padding-top: 5px"><input value="{{ info.name }}" type="text" name="user"
                                                         class="am-input-sm am-input-xm"
-                                                        placeholder="创建者"/>
+                                                        placeholder="用例名称"/>
                     </li>
                     <li>
                         <button style="padding-top: 5px; margin-top: 9px"

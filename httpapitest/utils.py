@@ -1,11 +1,10 @@
 import logging,os, platform
-from .models import TestConfig, Module, TestCase, TestReports, Env, TestSuite, Project
+from .models import Module, TestCase, TestReports
 from django.db import DataError
 from django.core.exceptions import ObjectDoesNotExist
 import time,io,yaml,datetime
 from django.db.models import Sum
 from .tasks_opt import create_task
-import json
 from json.decoder import JSONDecodeError
 from django_celery_beat.models import PeriodicTask
 logger = logging.getLogger('django')
@@ -122,101 +121,7 @@ def key_value_dict(keyword, **kwargs):
         return dicts
 
 
-def config_logic(type=True, **kwargs):
-    """
-    模块信息逻辑处理及数据处理
-    :param type: boolean: True 默认新增 False：更新数据
-    :param kwargs: dict: 模块信息
-    :return: ok or tips
-    """
-    config = kwargs.pop('config')
 
-    logging.debug('配置原始信息: {kwargs}'.format(kwargs=kwargs))
-    if config.get('name').get('config_name') is '':
-        return '配置名称不可为空'
-    if config.get('name').get('author') is '':
-        return '创建者不能为空'
-    if config.get('name').get('project') == '请选择':
-        return '请选择项目'
-    if config.get('name').get('module') == '请选择':
-        return '请选择或者添加模块'
-    if config.get('name').get('project') == '':
-        return '请先添加项目'
-    if config.get('name').get('module') == '':
-        return '请添加模块'
-    name = config.pop('name')
-    config.setdefault('name', name.pop('config_name'))
-    config.setdefault('config_info', name)
-    request_data = config.get('request').pop('request_data')
-    data_type = config.get('request').pop('type')
-    if request_data and data_type:
-        if data_type == 'json':
-            config.get('request').setdefault(data_type, request_data)
-        else:
-            data_dict = key_value_dict('data', **request_data)
-            if not isinstance(data_dict, dict):
-                return data_dict
-            config.get('request').setdefault(data_type, data_dict)
-    headers = config.get('request').pop('headers')
-    if headers:
-        config.get('request').setdefault('headers', key_value_dict('headers', **headers))
-    variables = config.pop('variables')
-    if variables:
-        variables_list = key_value_list('variables', **variables)
-        if not isinstance(variables_list, list):
-            return variables_list
-        config.setdefault('variables', variables_list)
-    parameters = config.pop('parameters')
-    if parameters:
-        params_list = key_value_list('parameters', **parameters)
-        if not isinstance(params_list, list):
-            return params_list
-        config.setdefault('parameters', params_list)
-    hooks = config.pop('hooks')
-    if hooks:
-        setup_hooks_list = key_value_list('setup_hooks', **hooks)
-        if not isinstance(setup_hooks_list, list):
-            return setup_hooks_list
-        config.setdefault('setup_hooks', setup_hooks_list)
-        teardown_hooks_list = key_value_list('teardown_hooks', **hooks)
-        if not isinstance(teardown_hooks_list, list):
-            return teardown_hooks_list
-        config.setdefault('teardown_hooks', teardown_hooks_list)
-    kwargs.setdefault('config', config)
-    return add_config_data(type, **kwargs)
-
-def add_config_data(type, **kwargs):
-    """
-    配置信息落地
-    :param type: boolean: true: 添加新配置， fasle: 更新配置
-    :param kwargs: dict
-    :return: ok or tips
-    """
-    config_opt = TestConfig.objects
-    config_info = kwargs.get('config').get('config_info')
-    name = kwargs.get('config').get('name')
-    module = config_info.get('module')
-    project = config_info.get('project')
-    belong_module = Module.objects.get(id=int(module))
-
-    try:
-        if type:
-            if config_opt.get_config_name(name, module, project) < 1:
-                config_opt.insert_config(belong_module, **kwargs)
-                logger.info('{name}配置添加成功: {kwargs}'.format(name=name, kwargs=kwargs))
-            else:
-                return '配置已存在，请重新编辑'
-        else:
-            index = config_info.get('test_index')
-            if name != TestConfig.objects.get(id=index).name \
-                    and config_opt.get_config_name(name, module, project) > 0:
-                return '用例或配置已在该模块中存在，请重新命名'
-            config_opt.update_config(belong_module, **kwargs)
-            logger.info('{name}配置更新成功: {kwargs}'.format(name=name, kwargs=kwargs))
-    except DataError:
-        logger.error('{name}配置信息过长：{kwargs}'.format(name=name, kwargs=kwargs))
-        return '字段长度超长，请重新编辑'
-    return 'ok'
 
 
 def case_logic(type=True, **kwargs):
@@ -328,36 +233,18 @@ def add_case_data(type, **kwargs):
         return '字段长度超长，请重新编辑'
     return 'ok'
 
-
-
 def update_include(include):
     for i in range(0, len(include)):
-        if isinstance(include[i], dict):
-            id = include[i]['config'][0]
-            source_name = include[i]['config'][1]
-            try:
-                name = TestConfig.objects.get(id=id).name
-            except ObjectDoesNotExist:
-                name = source_name+'_已删除!'
-                logger.warning('依赖的 {name} 配置已经被删除啦！！'.format(name=source_name))
-
-            include[i] = {
-                'config': [id, name]
-            }
-        else:
-            id = include[i][0]
-            source_name = include[i][1]
-            try:
-                name = TestCase.objects.get(id=id).name
-            except ObjectDoesNotExist:
-                name = source_name + ' 已删除'
-                logger.warning('依赖的 {name} 用例已经被删除啦！！'.format(name=source_name))
-
-            include[i] = [id, name]
+        id = include[i][0]
+        source_name = include[i][1]
+        try:
+            name = TestCase.objects.get(id=id).name
+        except ObjectDoesNotExist:
+            name = source_name + ' 已删除'
+            logger.warning('依赖的 {name} 用例已经被删除啦！！'.format(name=source_name))        
+        include[i] = [id, name]
 
     return include
-
-
 
 
 def dump_yaml_file(yaml_file, data):
@@ -374,7 +261,7 @@ def dump_python_file(python_file, data):
 def get_time_stamp():
     ct = time.time()
     local_time = time.localtime(ct)
-    data_head = time.strftime("%Y-%m-%d %H-%M-%S", local_time)
+    data_head = time.strftime("%Y-%m-%d-%H-%M-%S", local_time)
     data_secs = (ct - int(ct)) * 1000
     time_stamp = "%s-%03d" % (data_head, data_secs)
     return time_stamp
@@ -401,65 +288,6 @@ def timestamp_to_datetime(summary, type=True):
             except Exception:
                 pass
     return summary
-
-
-
-def env_data_logic(**kwargs):
-    """
-    环境信息逻辑判断及落地
-    :param kwargs: dict
-    :return: ok or tips
-    """
-    id = kwargs.get('id', None)
-    if id:
-        try:
-            Env.objects.delete_env(id)
-        except ObjectDoesNotExist:
-            return '删除异常，请重试'
-        return 'ok'
-    index = kwargs.pop('index')
-    env_name = kwargs.get('env_name')
-    if env_name is '':
-        return '环境名称不可为空'
-    elif kwargs.get('base_url') is '':
-        return '请求地址不可为空'
-    elif kwargs.get('simple_desc') is '':
-        return '请添加环境描述'
-
-    if index == 'add':
-        try:
-            if Env.objects.filter(env_name=env_name).count() < 1:
-                Env.objects.insert_env(**kwargs)
-                logging.info('环境添加成功：{kwargs}'.format(kwargs=kwargs))
-                return 'ok'
-            else:
-                return '环境名称重复'
-        except DataError:
-            return '环境信息过长'
-        except Exception:
-            logging.error('添加环境异常：{kwargs}'.format(kwargs=kwargs))
-            return '环境信息添加异常，请重试'
-    else:
-        try:
-            if Env.objects.get_env_name(index) != env_name and Env.objects.filter(
-                    env_name=env_name).count() > 0:
-                return '环境名称已存在'
-            else:
-                Env.objects.update_env(index, **kwargs)
-                logging.info('环境信息更新成功：{kwargs}'.format(kwargs=kwargs))
-                return 'ok'
-        except DataError:
-            return '环境信息过长'
-        except ObjectDoesNotExist:
-            logging.error('环境信息查询失败：{kwargs}'.format(kwargs=kwargs))
-            return '更新失败，请重试'
-
-
-
-
-
-
-
 
 def add_test_reports(summary, report_name=None):
     """
@@ -525,66 +353,6 @@ def get_total_values():
         total['percent'].append(total_percent)
 
     return total
-
-
-def upload_file_logic(files, project, module, account):
-    """
-    解析yaml或者json用例
-    :param files:
-    :param project:
-    :param module:
-    :param account:
-    :return:
-    """
-
-    for file in files:
-        file_suffix = os.path.splitext(file)[1].lower()
-        if file_suffix == '.json':
-            with io.open(file, encoding='utf-8') as data_file:
-                try:
-                    content = json.load(data_file)
-                except JSONDecodeError:
-                    err_msg = u"JSONDecodeError: JSON file format error: {}".format(file)
-                    logging.error(err_msg)
-
-        elif file_suffix in ['.yaml', '.yml']:
-            with io.open(file, 'r', encoding='utf-8') as stream:
-                content = yaml.load(stream)
-
-        for test_case in content:
-            test_dict = {
-                'project': project,
-                'module': module,
-                'author': account,
-                'include': []
-            }
-            if 'config' in test_case.keys():
-                test_case.get('config')['config_info'] = test_dict
-                variables = test_case.get('config')['variables']
-                variables_list = [ {item:variables[item]} for item in variables]
-                test_case.get('config')['variables'] = variables_list
-
-                add_config_data(type=True, **test_case)
-
-            if 'test' in test_case.keys():  # 忽略config
-                test_case.get('test')['case_info'] = test_dict
-                variables = test_case.get('test')['variables']
-                variables_list = [ {item:variables[item]} for item in variables]
-                test_case.get('test')['variables'] = variables_list
-
-                if 'validate' in test_case.get('test').keys():  # 适配validate两种格式
-                    validate = test_case.get('test').pop('validate')
-                    new_validate = []
-                    for check in validate:
-                        if 'comparator' not in check.keys():
-                            for key, value in check.items():
-                                tmp_check = {"check": value[0], "comparator": key, "expected": value[1]}
-                                new_validate.append(tmp_check)
-
-                    test_case.get('test')['validate'] = new_validate
-
-                add_case_data(type=True, **test_case)
-
 
 def task_logic(**kwargs):
     """

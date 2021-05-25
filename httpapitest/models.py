@@ -1,5 +1,5 @@
 from django.db import models
-from .managers import TestConfigManager, TestCaseManager, EnvManager, UserInfoManager
+from .managers import TestCaseManager, UserInfoManager
 
 # Create your models here.
 
@@ -15,7 +15,7 @@ class BaseTable(models.Model):
 class Project(BaseTable):
     class Meta:
         verbose_name = '项目信息'
-        db_table = 'ProjectInfo'
+        db_table = 'Project'
 
     project_name = models.CharField('项目名称', max_length=50, unique=True, null=False)
     responsible_name = models.CharField('负责人', max_length=20, null=False)
@@ -28,7 +28,7 @@ class Project(BaseTable):
 class Module(BaseTable):
     class Meta:
         verbose_name = '模块信息'
-        db_table = 'ModuleInfo'
+        db_table = 'Module'
 
     module_name = models.CharField('模块名称', max_length=50, null=False)
     belong_project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -46,22 +46,11 @@ class DebugTalk(BaseTable):
     debugtalk = models.TextField(null=True, default='#debugtalk.py')
 
 
-class TestConfig(BaseTable):
-    class Meta:
-        verbose_name = '配置信息'
-        db_table = 'TestConfigInfo'
-    name = models.CharField('配置名称', max_length=50, null=False)
-    belong_project = models.CharField('所属项目', max_length=50, null=False)
-    belong_module = models.ForeignKey(Module, on_delete=models.CASCADE)
-    author = models.CharField('编写人员', max_length=20, null=False)
-    request = models.TextField('请求信息', null=False)
-    objects = TestConfigManager()
-
 
 class TestCase(BaseTable):
     class Meta:
         verbose_name = '用例信息'
-        db_table = 'TestCaseInfo'
+        db_table = 'TestCase'
     name = models.CharField('用例名称', max_length=50, null=False)
     belong_project = models.CharField('所属项目', max_length=50, null=False)
     belong_module = models.ForeignKey(Module, on_delete=models.CASCADE)
@@ -83,27 +72,6 @@ class TestReports(BaseTable):
     reports = models.TextField()
 
 
-class Env(BaseTable):
-    class Meta:
-        verbose_name = '环境管理'
-        db_table = 'EnvInfo'
-
-    env_name = models.CharField(max_length=40, null=False, unique=True)
-    base_url = models.CharField(max_length=40, null=False)
-    simple_desc = models.CharField(max_length=50, null=False)
-    objects = EnvManager()
-
-
-class TestSuite(BaseTable):
-    class Meta:
-        verbose_name = '用例集合'
-        db_table = 'TestSuite'
-
-    belong_project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    suite_name = models.CharField(max_length=100, null=False)
-    include = models.TextField(null=False)
-
-   
 class UserInfo(BaseTable):
     class Meta:
         verbose_name = '用户信息'

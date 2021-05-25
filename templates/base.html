@@ -88,12 +88,6 @@
                 <li><a href="{% url 'case_list' %}">用 例 列 表</a></li>
             </ul>
 
-            <h3 class="am-icon-tags"><em></em> <a href="#">配置管理</a></h3>
-            <ul>
-                <li><a href="{% url 'config_add' %}">新 增 配 置</a></li>
-                <li><a href="{% url 'config_list' %}">配 置 列 表</a></li>
-            </ul>
-
             <h3 class="am-icon-soundcloud"><em></em> <a href="#">测试计划</a></h3>
             <ul>
                 <li><a href="{% url 'task_list' %}">定 时 任 务</a></li>
@@ -103,10 +97,6 @@
             <h3 class="am-icon-jsfiddle"><em></em> <a href="#">报告管理</a></h3>
             <ul>
                 <li><a href="{% url 'report_list' %}">查看报告</a></li>
-            </ul>
-            <h3 class="am-icon-gears"><em></em> <a href="#">系统设置</a></h3>
-            <ul>
-                <li><a href="{% url 'env_list' %}">运 行 环 境</a></li>
             </ul>
         </div>
         <!-- sideMenu End -->
@@ -135,13 +125,6 @@
                 <button type="button" class="am-btn am-btn-default am-radius am-btn-xs"
                         onclick="location='{% url 'case_list' %}'">用例列表<a
                         href="{% url 'case_list' %}" class="am-close am-close-spin">~</a>
-                </button>
-            </li>
-
-            <li>
-                <button type="button" class="am-btn am-btn-default am-radius am-btn-xs"
-                        onclick="location='{% url 'config_add' %}'">新增配置<a
-                        href="{% url 'config_add' %}" class="am-close am-close-spin">~</a>
                 </button>
             </li>
             <li>
